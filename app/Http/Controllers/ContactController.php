@@ -11,6 +11,7 @@ use App\Exports\ContactsExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
+
 class ContactController extends Controller
 {
 
@@ -72,8 +73,6 @@ class ContactController extends Controller
         $logs = ActivityLog::with('user')->paginate(10);
 
         return view('contacts.index', compact('contacts', 'totalLeads', 'hotLeads', 'warmLeads', 'coldLeads', 'newLeadsToday', 'userName', 'logs', 'role'));
-
-
     }
 
 
@@ -165,6 +164,7 @@ class ContactController extends Controller
     {
         $request->validate([
             'company_name' => 'required|string|max:255',
+            'company_type' => 'required|string|max:255',
             'individual_name' => 'required|string|max:255',
             'email' => 'required|email|unique:contacts,email',
             'phone' => 'required|string|max:20',
@@ -192,17 +192,25 @@ class ContactController extends Controller
     }
 
     // Menampilkan formulir untuk mengedit kontak
+    public function getContact($id)
+    {
+        $contact = Contact::findOrFail($id);
+        return response()->json($contact);
+    }
+
     public function editForm($id)
     {
         $contact = Contact::findOrFail($id);
-        return view('contacts.editForm', compact('contact'));
+        return response()->json($contact);
     }
+
 
     // Memperbarui kontak yang ada
     public function update(Request $request, $id)
     {
         $request->validate([
             'company_name' => 'required|string|max:255',
+            'company_type' => 'required|string|max:255',
             'individual_name' => 'required|string|max:255',
             'email' => 'required|email|unique:contacts,email,' . $id,
             'phone' => 'required|string|max:20',
@@ -254,7 +262,7 @@ class ContactController extends Controller
         // Simpan log aktivitas dengan detail
         $this->logActivity('Hapus Data', "{$contactDetails}", Auth::user()->id, Auth::user()->role);
 
-        return redirect()->route('contacts.index')->with('success', 'Contact deleted successfully.');
+        return redirect()->route('data.leads')->with('success', 'Contact deleted successfully.');
     }
 
     private function logActivity($activity, $details, $userId, $role)
@@ -265,8 +273,6 @@ class ContactController extends Controller
             'role' => $role,
             'details' => $details,
         ]);
-
-
     }
 
     // ContactController.php
@@ -288,8 +294,8 @@ class ContactController extends Controller
             'Ubah Status Lead',
 
             '  ID: ' . $contact->id .
-            ', Name: ' . $contact->individual_name .
-            ', Company: ' . $contact->company_name.' status lead menjadi ' . $contact->lead_status ,
+                ', Name: ' . $contact->individual_name .
+                ', Company: ' . $contact->company_name . ' status lead menjadi ' . $contact->lead_status,
             Auth::user()->id,
             Auth::user()->role
         );
@@ -355,4 +361,67 @@ class ContactController extends Controller
 
         return view('contacts.dataTracker', compact('contacts', 'totalLeads', 'hotLeads', 'warmLeads', 'coldLeads', 'newLeadsToday', 'userName', 'role'));
     }
+
+
+    public function leads(Request $request)
+    {
+        $query = Contact::query();
+
+        // Pencarian
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                    ->orWhere('individual_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('job_title', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('date_added', 'like', "%{$search}%")
+                    ->orWhere('lead_status', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter berdasarkan lead_status
+        if ($request->filled('lead_status')) {
+            $leadStatus = $request->input('lead_status');
+            if (in_array($leadStatus, ['Hot Leads', 'Warm Leads', 'Cold Leads'])) {
+                $query->where('lead_status', $leadStatus);
+            }
+        }
+
+        // Pengurutan berdasarkan tanggal
+        $sortOrder = $request->input('sort', 'asc'); // default ke 'asc'
+        if (in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy('created_at', $sortOrder);
+        }
+
+        // Mengambil data kontak dengan pagination
+        $contacts = $query->paginate(10);
+
+        // Statistik Ringkasan
+        $totalLeads = Contact::count();
+        $hotLeads = Contact::where('lead_status', 'Hot Leads')->count();
+        $warmLeads = Contact::where('lead_status', 'Warm Leads')->count();
+        $coldLeads = Contact::where('lead_status', 'Cold Leads')->count();
+        $newLeadsToday = Contact::whereDate('date_added', now()->toDateString())->count();
+
+        // Ambil nama pengguna
+        $userName = Auth::user()->name;
+        $role = Auth::user()->role;
+
+        // Kembalikan view dengan data kontak dan paginasi
+        return view('contacts.leads', [
+            'contacts' => $contacts,
+            'totalLeads' => $totalLeads,
+            'hotLeads' => $hotLeads,
+            'warmLeads' => $warmLeads,
+            'coldLeads' => $coldLeads,
+            'newLeadsToday' => $newLeadsToday,
+            'userName' => $userName,
+            'role' => $role,
+        ]);
+    }
+
+
 }

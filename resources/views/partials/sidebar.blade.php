@@ -30,7 +30,7 @@
                 <img src="{{ asset('icons/tracker.svg') }}" alt="Tracker" class="menu-icon">
                 <span class="menu-text">Data Tracker</span>
             </a>
-            <a href="" class="menu-item" id="item-leads">
+            <a href="{{ route('data.leads') }}" class="menu-item" id="item-leads">
                 <img src="{{ asset('icons/leads.svg') }}" alt="Leads" class="menu-icon">
                 <span class="menu-text">Leads</span>
             </a>

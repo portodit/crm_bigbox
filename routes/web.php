@@ -34,6 +34,9 @@ Route::get('/beranda', [ContactController::class, 'index'])->name('contacts.inde
 
 Route::get('/tracker', [ContactController::class, 'tracker'])->name('data.tracker');
 
+Route::get('/leads', [ContactController::class, 'leads'])->name('data.leads');
+
+
 // Menampilkan formulir untuk menambahkan kontak baru
 Route::get('/contacts/form', [ContactController::class, 'form'])->name('contacts.form');
 
@@ -57,7 +60,10 @@ Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.st
 Route::get('/contacts/{id}', [ContactController::class, 'detailContact'])->name('contacts.detailContact');
 
 // Rute untuk menampilkan formulir untuk mengedit kontak
-Route::get('/contacts/{id}/editForm', [ContactController::class, 'editForm'])->name('contacts.editForm');
+Route::get('/contacts/{id}/edit', [ContactController::class, 'getContact'])->name('contacts.getContact');
+Route::get('/contacts/{id}/edit', [ContactController::class, 'editForm'])->name('contacts.edit');
+
+
 
 // Rute untuk memperbarui kontak yang ada
 Route::put('/contacts/{id}', [ContactController::class, 'update'])->name('contacts.update');
@@ -67,6 +73,7 @@ Route::delete('/contacts/{id}', [ContactController::class, 'destroy'])->name('co
 
 // // Menampilkan formulir impor Excel
 // Route::get('/contacts/import', [ContactController::class, 'importForm'])->name('contacts.import');
+
 
 
 
@@ -89,3 +96,8 @@ Route::get('/contacts/logs', [ContactController::class, 'logs'])->name('contacts
 
 // web.php
 Route::put('/contacts/{id}/update-lead-status', [ContactController::class, 'updateLeadStatus'])->name('contacts.updateLeadStatus');
+
+
+// Rute untuk halaman unfollowed up contacts
+Route::get('/contacts/lostData', [ContactController::class, 'lost_data'])->name('contacts.lostData');
+
